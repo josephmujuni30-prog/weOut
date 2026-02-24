@@ -1,0 +1,61 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.9.1'
+        classpath 'com.google.gms:google-services:4.4.2'
+    }
+}
+
+apply from: "variables.gradle"
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (namespace == null) {
+                    if (project.name == 'capacitor-android') {
+                        namespace "com.getcapacitor"
+                    } else if (project.name == 'capacitor-cordova-android-plugins') {
+                        namespace "capacitor.android.plugins"
+                    } else if (project.name != 'app') {
+                        namespace "com.joseph.weOut.${project.name.replace(':', '.')}"
+                    }
+                }
+                
+                buildFeatures {
+                    buildConfig = true
+                }
+            }
+
+            if (project.name != 'app') {
+                project.tasks.matching { it.name.startsWith('process') && it.name.endsWith('Manifest') }.configureEach { task ->
+                    task.doFirst {
+                        def manifestFile = file("${project.projectDir}/src/main/AndroidManifest.xml")
+                        if (manifestFile.exists()) {
+                            def content = manifestFile.text
+                            if (content.contains('package=')) {
+                                manifestFile.text = content.replaceAll(/package="[^"]*"/, "")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

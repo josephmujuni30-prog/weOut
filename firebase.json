@@ -1,0 +1,16 @@
+{
+  "hosting": {
+    "public": "users/joseph/dev/weOut",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

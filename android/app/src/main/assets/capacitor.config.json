@@ -1,0 +1,13 @@
+{
+	"appId": "com.joseph.weOut",
+	"appName": "weOut",
+	"bundledWebRuntime": false,
+	"npmClient": "npm",
+	"webDir": "www",
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 0
+		}
+	},
+	"cordova": {}
+}
