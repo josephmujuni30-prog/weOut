@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
-import { Search, Filter, MapPin, Calendar, QrCode, User, Plus, ChevronRight, Sun, Moon, Clock } from 'lucide-react';
+import { Search, MapPin, Calendar, QrCode, Filter, User, Plus, ChevronRight, Sun, Moon, Clock } from 'lucide-react';
 import { simulateMpesaStkPush, sendBookingEmail } from '../services/payment';
 import { simulateGoogleLogin, UserInfo } from '../services/auth';
 import { Event, Category } from '../types';
