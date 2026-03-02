@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
-import { Search, Filter, MapPin, Calendar, QrCode, User, Plus, ChevronRight } from 'lucide-react';
+import { Search, Filter, MapPin, Calendar, QrCode, User, Plus, ChevronRight, Sun, Moon, Clock } from 'lucide-react';
 import { simulateMpesaStkPush, sendBookingEmail } from '../services/payment';
 import { simulateGoogleLogin, UserInfo } from '../services/auth';
 import { Event, Category } from '../types';
@@ -363,7 +363,7 @@ const EventDetail: React.FC<EventDetailProps> = ({ events, onBook }) => {
       
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', margin: '20px 0', color: '#666' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={18} /> {event.date}</span>
-        {event.time && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Sun size={18} /> {event.time}</span>}
+        {event.time && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={18} /> {event.time}</span>}
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><MapPin size={18} /> {event.location}</span>
       </div>
 
