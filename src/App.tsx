@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
 import { Search, MapPin, Calendar, QrCode, Filter, User, Plus, ChevronRight, Sun, Moon, Clock } from 'lucide-react';
 import { simulateMpesaStkPush, sendBookingEmail } from '../services/payment';
-import { simulateGoogleLogin, UserInfo } from '../services/auth';
+import { simulateGoogleLogin, signOut as firebaseSignOut, UserInfo } from '../services/auth';
 import { Event, Category } from '../types';
 
 // --- TYPES ---
@@ -410,11 +410,25 @@ export default function App() {
   
   // login/logout helpers
   const signIn = async () => {
-    const info = await simulateGoogleLogin();
-    setUser(info);
-    setUserEmail(info.email);
+    try {
+      const info = await simulateGoogleLogin();
+      setUser(info);
+      setUserEmail(info.email);
+    } catch (error) {
+      console.error('Login failed:', error);
+      alert('Login failed. Please try again.');
+    }
   };
-  const signOut = () => setUser(null);
+  const signOut = async () => {
+    try {
+      await firebaseSignOut();
+      setUser(null);
+      setUserEmail('');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      alert('Logout failed. Please try again.');
+    }
+  };
 
   const addEvent = (ev: Event) => {
     // associate organizer uid if available
