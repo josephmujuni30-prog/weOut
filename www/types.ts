@@ -10,7 +10,7 @@ export enum Category {
   NETWORKING = 'Networking'
 }
 
-export type UserRole = 'user' | 'organizer';
+export type UserRole = 'attendee' | 'organizer';
 
 export interface UserProfile {
   uid?: string;

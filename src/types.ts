@@ -32,7 +32,7 @@ export interface UserProfile {
   avatar: string;
   interests: Category[];
   preferredAreas: string[];
-  role: 'user' | 'organizer';
+  role: 'attendee' | 'organizer';
 }
 
 export interface Booking {

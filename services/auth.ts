@@ -1,8 +1,8 @@
 import { auth, db } from './firebase';
-import { signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut, User } from 'firebase/auth';
+import { signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut as firebaseSignOut, User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-type Role = 'user' | 'organizer';
+type Role = 'attendee' | 'organizer';
 
 export interface UserInfo {
   uid: string;
@@ -12,33 +12,40 @@ export interface UserInfo {
 }
 
 /**
- * Sign in with Google using Firebase Authentication
+ * Sign in with Google using redirect (works when popups are blocked).
+ * Call getRedirectResult(auth) on app load to complete sign-in after return.
  */
 export async function signInWithGoogle(): Promise<UserInfo> {
+  const provider = new GoogleAuthProvider();
+  await signInWithRedirect(auth, provider);
+  // Page redirects to Google; after sign-in, app must handle getRedirectResult on load
+  return new Promise(() => {}); // never resolves (page unloads)
+}
+
+/**
+ * Call this on app load to complete sign-in after redirect. Returns user if they just signed in.
+ */
+export async function getGoogleRedirectUser(): Promise<UserInfo | null> {
   try {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
+    const result = await getRedirectResult(auth);
+    if (!result?.user) return null;
     const user = result.user;
 
-    // Check if user role exists in Firestore
     const userDocRef = doc(db, 'users', user.uid);
     const userDoc = await getDoc(userDocRef);
-    
-    let role: Role = 'user'; // default role
-    
+    let role: Role = 'attendee';
     if (userDoc.exists()) {
-      role = userDoc.data().role || 'user';
+      const data = userDoc.data() as { role?: unknown };
+      role = data.role === 'organizer' ? 'organizer' : 'attendee';
     } else {
-      // Create new user profile in Firestore
       await setDoc(userDocRef, {
         uid: user.uid,
         name: user.displayName || 'User',
         email: user.email,
-        role: role,
+        role,
         createdAt: new Date(),
       });
     }
-
     return {
       uid: user.uid,
       name: user.displayName || 'User',
@@ -46,7 +53,7 @@ export async function signInWithGoogle(): Promise<UserInfo> {
       role: role,
     };
   } catch (error) {
-    console.error('Google sign-in error:', error);
+    console.error('Google redirect sign-in error:', error);
     throw error;
   }
 }

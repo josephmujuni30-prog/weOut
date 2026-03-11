@@ -1,38 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Link,
-  useParams,
-  useNavigate
+  useParams
 } from "react-router-dom";
-import { Search, MapPin, Calendar, QrCode, Filter, User, Plus } from "lucide-react";
-import { initializeApp } from "firebase/app";
-import {
-  getAuth,
-  signInWithPopup,
-  GoogleAuthProvider,
-  signOut as firebaseSignOut
-} from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged } from "firebase/auth";
+import { collection, addDoc, onSnapshot, query, serverTimestamp } from "firebase/firestore"; // REAL FIRESTORE
+import { auth, db } from "./firebaseConfigs"; // Ensure db is exported from your config
 import { Event, Category } from "../types";
-
-// Paste the API key from Firebase Console here:
-const FIREBASE_API_KEY = "PASTE_YOUR_API_KEY_HERE";
-
-const firebaseConfig = {
-  apiKey: FIREBASE_API_KEY,
-  authDomain: "event-nine-gamma.firebaseapp.com",
-  projectId: "event-nine-gamma",
-  storageBucket: "event-nine-gamma.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:12345:web:abc123"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-export { auth };
+import EventsMap from "./components/EventsMap";
 
 // --- LOCAL TYPES ---
 interface UserInfo {
@@ -42,211 +20,114 @@ interface UserInfo {
   role?: string;
 }
 
-type LayoutProps = {
-  children: React.ReactNode;
-  darkMode: boolean;
-  setDarkMode: (v: boolean) => void;
-  userName?: string;
-  currentUser?: UserInfo | null;
-  onSignIn: () => Promise<void>;
-  onSignOut: () => Promise<void>;
-};
-
-type HomeProps = { events: Event[]; currentUser: UserInfo | null; onPublish: (e: Event) => void };
-type TicketsProps = { bookedEvents: Event[]; onCancel: (id: string) => void };
-type EventDetailProps = { events: Event[]; onBook: (ev: Event, method: "mpesa" | "visa") => void };
-
-// --- LAYOUT ---
-const Layout: React.FC<LayoutProps> = ({ children, darkMode }) => (
-  <div
-    style={{
-      backgroundColor: darkMode ? "#121212" : "#ffffff",
-      color: darkMode ? "#ffffff" : "#000000",
-      minHeight: "100vh",
-      transition: "all 0.3s"
-    }}
-  >
+// --- COMPONENTS (Layout & Detail) ---
+const Layout: React.FC<{ children: React.ReactNode; darkMode: boolean; user: UserInfo | null; onSignIn: () => void; onSignOut: () => void }> = ({ children, darkMode, user, onSignIn, onSignOut }) => (
+  <div style={{ backgroundColor: darkMode ? "#121212" : "#ffffff", color: darkMode ? "#ffffff" : "#000000", minHeight: "100vh", transition: "all 0.3s" }}>
+    <nav style={{ padding: 12, borderBottom: "1px solid #ccc" }}>
+      <Link to="/">Home</Link> | <Link to="/map">Map</Link> | <Link to="/tickets">Tickets</Link> | <Link to="/profile">Profile</Link>
+      {!user ? (
+        <button onClick={onSignIn} style={{ marginLeft: 8 }}>Sign in</button>
+      ) : (
+        <span style={{ marginLeft: 8 }}>
+          {user.name} <button onClick={onSignOut}>Sign out</button>
+        </span>
+      )}
+    </nav>
     {children}
   </div>
 );
 
-// --- EVENT WIZARD (minimal) ---
-const EventWizard: React.FC<{ onPublish: (event: Event) => void }> = ({ onPublish }) => {
+const Home: React.FC<{ events: Event[]; onPublish: (title: string) => void }> = ({ events, onPublish }) => {
   const [title, setTitle] = useState("");
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onPublish({
-      id: Date.now().toString(),
-      title: title || "Untitled",
-      description: "",
-      date: "",
-      time: "",
-      location: "",
-      area: "",
-      category: Category.MUSIC,
-      price: 0,
-      organizer: "",
-      imageUrl: "",
-      capacity: 100,
-      bookedCount: 0
-    });
-    setTitle("");
-  };
-  return (
-    <form onSubmit={submit} style={{ padding: 16 }}>
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Event title" />
-      <button type="submit">Publish</button>
-    </form>
-  );
-};
-
-// --- HOME (minimal) ---
-const Home: React.FC<HomeProps> = ({ events, currentUser, onPublish }) => {
   return (
     <div style={{ padding: 20 }}>
-      <h2>Events</h2>
+      <h2>Real-Time Events</h2>
+      <div style={{ marginBottom: 20 }}>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Event title" />
+        <button onClick={() => { onPublish(title); setTitle(""); }}>Publish to Firestore</button>
+      </div>
       {events.map((ev) => (
-        <div key={ev.id}>
+        <div key={ev.id} style={{ padding: "10px 0" }}>
           <Link to={`/event/${ev.id}`}>{ev.title}</Link>
         </div>
       ))}
-      <EventWizard onPublish={onPublish} />
     </div>
   );
 };
 
-// --- TICKETS (fixed ternary) ---
-const Tickets: React.FC<TicketsProps> = ({ bookedEvents, onCancel }) => (
-  <div style={{ padding: "20px" }}>
-    {bookedEvents.length === 0 ? (
-      <p>No tickets booked.</p>
-    ) : (
-      bookedEvents.map((ticket) => (
-        <div key={ticket.id} style={{ marginBottom: 12 }}>
-          <strong>{ticket.title}</strong>
-          <div>
-            <button onClick={() => onCancel(ticket.id)}>Cancel</button>
-          </div>
-        </div>
-      ))
-    )}
-  </div>
-);
-
-// --- PROFILE (minimal) ---
-const Profile: React.FC = () => {
-  const [name] = useState("Alex");
-  return (
-    <div style={{ padding: 20 }}>
-      <h3>{name}</h3>
-      <p>Profile placeholder</p>
-    </div>
-  );
-};
-
-// --- EVENT DETAIL (fixed missing return) ---
-const EventDetail: React.FC<EventDetailProps> = ({ events, onBook }) => {
-  const { id } = useParams();
-  const event = events.find((e) => e.id === id);
-  if (!event) return <div style={{ padding: 20 }}>Event not found</div>;
-  return (
-    <div style={{ padding: 20 }}>
-      <h2>{event.title}</h2>
-      <p>{event.description}</p>
-      <button onClick={() => onBook(event, "mpesa")}>Book (MPESA)</button>
-    </div>
-  );
-};
-
-// --- STYLES (kept) ---
-const styles = {
-  container: { padding: "20px" }
-};
-
-const navStyles = {
-  bottomNav: {
-    position: "fixed",
-    bottom: 0,
-    width: "100%",
-    display: "flex",
-    justifyContent: "space-around",
-    padding: "15px",
-    backgroundColor: "#8b5cf6",
-    color: "white",
-    fontWeight: "bold"
-  }
-};
-
-// --- APP (complete return + real auth helpers) ---
+// --- MAIN APP ---
 export default function App() {
-  const [darkMode, setDarkMode] = useState(false);
-  const [bookedEvents, setBookedEvents] = useState<Event[]>([]);
+  const [darkMode] = useState(false);
   const [user, setUser] = useState<UserInfo | null>(null);
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: "1",
-      title: "Sol Fest 2026",
-      description: "The biggest festival in Nairobi.",
-      date: "Dec 12",
-      time: "",
-      location: "KICC",
-      area: "",
-      category: Category.MUSIC,
-      price: 3500,
-      organizer: "",
-      imageUrl: "https://via.placeholder.com/300x150",
-      capacity: 1000,
-      bookedCount: 0
-    }
-  ]);
+  const [events, setEvents] = useState<Event[]>([]);
 
+  // 1. REAL-TIME AUTH LISTENER
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      if (u) {
+        setUser({ uid: u.uid, name: u.displayName || "", email: u.email || "" });
+      } else {
+        setUser(null);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. REAL-TIME FIRESTORE LISTENER
+  useEffect(() => {
+    // This "onSnapshot" makes the app update instantly when a new event is added
+    const q = query(collection(db, "events"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const eventData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Event[];
+      setEvents(eventData);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 3. REAL AUTH ACTIONS
   const signIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const u = result.user;
-      setUser({
-        uid: u.uid,
-        name: u.displayName || "",
-        email: u.email || "",
-        role: "attendee"
-      });
+      await signInWithPopup(auth, provider);
     } catch (err) {
       console.error("Login failed:", err);
-      alert("Login failed");
     }
   };
 
-  const signOut = async () => {
+  const signOut = () => firebaseSignOut(auth);
+
+  // 4. REAL DATABASE WRITE
+  const handlePublish = async (title: string) => {
+    if (!user) return alert("Must be logged in!");
     try {
-      await firebaseSignOut(auth);
-      setUser(null);
+      await addDoc(collection(db, "events"), {
+        title: title || "New Event",
+        organizerId: user.uid, // Matches your Private Rules!
+        createdAt: serverTimestamp(),
+        category: Category.MUSIC,
+        price: 0
+      });
     } catch (err) {
-      console.error("Logout failed:", err);
-      alert("Logout failed");
+      console.error("Error adding event:", err);
     }
   };
-
-  const handlePublish = (ev: Event) => setEvents((s) => [ev, ...s]);
-  const handleBook = (ev: Event, method: "mpesa" | "visa") => {
-    setBookedEvents((s) => [...s, ev]);
-  };
-  const handleCancel = (id: string) => setBookedEvents((s) => s.filter((t) => t.id !== id));
 
   return (
     <Router>
-      <Layout darkMode={darkMode} setDarkMode={setDarkMode} onSignIn={signIn} onSignOut={signOut} currentUser={user}>
-        <nav style={{ padding: 12 }}>
-          <Link to="/">Home</Link> | <Link to="/tickets">Tickets</Link> | <Link to="/profile">Profile</Link>
-          {!user ? <button onClick={signIn} style={{ marginLeft: 8 }}>Sign in</button> : <button onClick={signOut} style={{ marginLeft: 8 }}>Sign out</button>}
-        </nav>
+      <Layout darkMode={darkMode} user={user} onSignIn={signIn} onSignOut={signOut}>
         <Routes>
-          <Route path="/" element={<Home events={events} currentUser={user} onPublish={handlePublish} />} />
-          <Route path="/tickets" element={<Tickets bookedEvents={bookedEvents} onCancel={handleCancel} />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/event/:id" element={<EventDetail events={events} onBook={handleBook} />} />
+          <Route path="/" element={<Home events={events} onPublish={handlePublish} />} />
+          <Route path="/map" element={<EventsMap events={events} />} />
+          <Route path="/tickets" element={<div style={{padding:20}}>Tickets coming soon...</div>} />
+          <Route path="/profile" element={<div style={{padding:20}}>Profile: {user?.name}</div>} />
+          <Route path="/event/:id" element={<div style={{padding:20}}>Event Details View</div>} />
         </Routes>
-        <div style={navStyles.bottomNav}>weOut</div>
+        <div style={{ position: "fixed", bottom: 0, width: "100%", padding: 15, backgroundColor: "#8b5cf6", color: "white", textAlign: "center" }}>
+          weOut
+        </div>
       </Layout>
     </Router>
   );

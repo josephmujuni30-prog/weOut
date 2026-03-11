@@ -10,7 +10,7 @@ export enum Category {
   NETWORKING = 'Networking'
 }
 
-export type UserRole = 'user' | 'organizer';
+export type UserRole = 'attendee' | 'organizer';
 
 export interface UserProfile {
   uid?: string;
@@ -37,6 +37,9 @@ export interface Event {
   imageUrl: string;
   capacity: number;
   bookedCount: number;
+  /** Optional coordinates for map display */
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface Booking {
