@@ -1,41 +1,38 @@
-import { defineConfig, loadEnv } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ mode }) => {
-  // Load env file based on `mode` in the current working directory.
-  // The third parameter '' loads all variables regardless of prefix.
-  const env = loadEnv(mode, process.cwd(), '');
+  const env = loadEnv(mode, '.', '');
 
   return {
-    plugins: [react()],
-    
+    plugins: [react(), tailwindcss()],
+    define: {
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'process.env.VITE_GOOGLE_MAPS_API_KEY': JSON.stringify(env.VITE_GOOGLE_MAPS_API_KEY),
+    },
     resolve: {
       alias: {
-        // Allows for cleaner imports like: import Button from '@/components/Button'
-        '@': path.resolve(__dirname, './src'),
+        '@': path.resolve(__dirname, '.'),
       },
     },
-
     server: {
       port: 3000,
-      host: true, // Same as '0.0.0.0', makes it accessible on your local network
-      open: true, // Bonus: opens the browser automatically
-    },
-
-    define: {
-      // Fixed the hyphenated key access using bracket notation
-      'process.env.API_KEY': JSON.stringify(env.API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env['GEMINI-API-KEY']),
-    },
-
-    build: {
-      outDir: 'dist',
-      sourcemap: mode === 'development', // Useful for debugging
-      rollupOptions: {
-        output: {
-          manualChunks: undefined,
-        },
+      hmr: process.env.DISABLE_HMR
+        ? false
+        : {
+            clientPort: 443,
+            protocol: 'wss',
+          },
+      watch: {
+        ignored: process.env.DISABLE_HMR ? ['**/*'] : [],
+      },
+      // FIX: Set COOP to unsafe-none so Firebase Auth popup can communicate
+      // back to the opener window without being blocked by the browser
+      headers: {
+        'Cross-Origin-Opener-Policy': 'unsafe-none',
+        'Cross-Origin-Embedder-Policy': 'unsafe-none',
       },
     },
   };

@@ -1,7 +1,0 @@
-{
-  "name": "weOut",
-  "description": "A premier event discovery and booking platform for Nairobi's vibrant cultural scene. Discover concerts, tech mixers, and community markets across the city.",
-  "requestFramePermissions": [
-    "geolocation"
-  ]
-}

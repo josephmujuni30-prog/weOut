@@ -1,0 +1,97 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile information for attendees and organizers",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique user ID" },
+        "email": { "type": "string", "format": "email", "description": "User's email address" },
+        "displayName": { "type": "string", "description": "User's display name" },
+        "photoURL": { "type": "string", "format": "uri", "description": "User's profile photo URL" },
+        "role": { "type": "string", "enum": ["attendee", "organizer"], "description": "User's role in the app" },
+        "bio": { "type": "string", "description": "User's bio" },
+        "interests": { "type": "array", "items": { "type": "string" }, "description": "List of user interests" },
+        "socialLinks": { "type": "object", "description": "Map of social media links" },
+        "savedEvents": { "type": "array", "items": { "type": "string" }, "description": "List of saved event IDs" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Event": {
+      "title": "Event",
+      "description": "Event details created by organizers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique event ID" },
+        "title": { "type": "string", "description": "Event title" },
+        "description": { "type": "string", "description": "Event description" },
+        "date": { "type": "string", "format": "date-time", "description": "Event date and time" },
+        "location": { "type": "object", "description": "Event location details (address, lat, lng)" },
+        "category": { "type": "string", "description": "Event category" },
+        "tags": { "type": "array", "items": { "type": "string" }, "description": "Event tags" },
+        "coverImage": { "type": "string", "format": "uri", "description": "Event cover image URL" },
+        "ticketTypes": { "type": "array", "items": { "type": "object" }, "description": "List of ticket types and prices" },
+        "organizerId": { "type": "string", "description": "UID of the event organizer" },
+        "status": { "type": "string", "enum": ["draft", "published"], "description": "Event status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the event was created" }
+      },
+      "required": ["title", "date", "location", "organizerId", "status"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Ticket booking information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique booking ID" },
+        "eventId": { "type": "string", "description": "The ID of the event" },
+        "userId": { "type": "string", "description": "The UID of the user who booked" },
+        "organizerId": { "type": "string", "description": "The UID of the event organizer" },
+        "ticketType": { "type": "string", "description": "The name of the ticket type" },
+        "quantity": { "type": "integer", "description": "Number of tickets booked" },
+        "totalAmount": { "type": "number", "description": "Total amount paid" },
+        "paymentMethod": { "type": "string", "enum": ["mpesa", "visa"], "description": "Payment method used" },
+        "paymentStatus": { "type": "string", "enum": ["pending", "completed"], "description": "Payment status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the booking was made" },
+        "qrCode": { "type": "string", "description": "QR code data for the ticket" }
+      },
+      "required": ["eventId", "userId", "organizerId", "ticketType", "quantity", "totalAmount", "paymentMethod", "paymentStatus"],
+      "properties": {
+        "id": { "type": "string", "description": "The unique booking ID" },
+        "eventId": { "type": "string", "description": "The ID of the event" },
+        "userId": { "type": "string", "description": "The UID of the user who booked" },
+        "organizerId": { "type": "string", "description": "The UID of the event organizer" },
+        "ticketType": { "type": "string", "description": "The name of the ticket type" },
+        "quantity": { "type": "integer", "description": "Number of tickets booked" },
+        "totalAmount": { "type": "number", "description": "Total amount paid" },
+        "paymentMethod": { "type": "string", "enum": ["mpesa", "visa"], "description": "Payment method used" },
+        "paymentStatus": { "type": "string", "enum": ["pending", "completed"], "description": "Payment status" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the booking was made" },
+        "qrCode": { "type": "string", "description": "QR code data for the ticket" },
+        "reminderEnabled": { "type": "boolean", "description": "Whether the user wants a reminder" },
+        "reminderSent": { "type": "boolean", "description": "Whether the reminder has been sent" }
+      }
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "In-app notifications for users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique notification ID" },
+        "userId": { "type": "string", "description": "The UID of the user receiving the notification" },
+        "title": { "type": "string", "description": "Notification title" },
+        "message": { "type": "string", "description": "Notification message" },
+        "type": { "type": "string", "enum": ["reminder", "booking", "system"], "description": "Notification type" },
+        "read": { "type": "boolean", "description": "Whether the notification has been read" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the notification was created" },
+        "eventId": { "type": "string", "description": "Optional event ID related to the notification" }
+      },
+      "required": ["userId", "title", "message", "type", "read", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/events/{eventId}": { "schema": "Event", "description": "Events collection" },
+    "/bookings/{bookingId}": { "schema": "Booking", "description": "Ticket bookings" },
+    "/notifications/{notificationId}": { "schema": "Notification", "description": "In-app notifications" }
+  }
+}

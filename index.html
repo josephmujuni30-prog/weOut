@@ -1,18 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>weOut</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
-
-<script src="https://cdn.tailwindcss.com"></script>
+    <!-- FIX: Updated title from generic to app name -->
+    <title>weOut – Discover Events in Nairobi</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
     <div id="root"></div>
-
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Suppress benign Vite WebSocket connection errors in AI Studio iframe environment
+      window.addEventListener('unhandledrejection', (event) => {
+        if (
+          event.reason &&
+          ((event.reason.message && event.reason.message.includes('WebSocket')) ||
+            (typeof event.reason === 'string' && event.reason.includes('WebSocket')))
+        ) {
+          event.preventDefault();
+        }
+      });
+      window.addEventListener(
+        'error',
+        (event) => {
+          if (event.message && event.message.includes('WebSocket')) {
+            event.preventDefault();
+          }
+        },
+        true
+      );
+    </script>
   </body>
 </html>
