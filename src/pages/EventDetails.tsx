@@ -101,7 +101,7 @@ function MpesaStep({ amount, bookingId, eventTitle, onSuccess, onBack }: MpesaSt
         return;
       }
       try {
-        const res = await fetch(`/api/mpesa/status/${cid}`);
+        const res = await fetch(`/api/mpesa/status?id=${cid}`);
         const data = await res.json();
         if (data.status === 'completed') {
           clearInterval(pollRef.current!);
